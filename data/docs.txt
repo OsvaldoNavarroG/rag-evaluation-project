@@ -1,0 +1,2 @@
+Machine learning is a field of artificial intelligence that focuses on building systems that learn from data.
+It is used in many applications such as image recognition, natural language processing, and recommendation systems.
