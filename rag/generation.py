@@ -1,4 +1,3 @@
-import os
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -26,4 +25,4 @@ def generate_answer(query, context_chunks):
         temperature=0.2
         )
     
-    return response.choices[0].message.context.strip()
+    return response.choices[0].message.content.strip()

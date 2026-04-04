@@ -1,8 +1,17 @@
+from nltk.tokenize import sent_tokenize
 from sentence_transformers import SentenceTransformer
 from typing import List
 import numpy as np
 
+# import nltk
+# nltk.download("punkt_tab")
+
 model = SentenceTransformer("all-MiniLM-L6-v2")
+
+
+def split_sentences(text):
+    # try nltk first, then switch to spacy
+    return sent_tokenize(text)
 
 
 def load_documents(path: str) -> str:
@@ -17,6 +26,34 @@ def chunk_text(text, chunk_size=200) -> List[str]:
         chunks.append("".join(words[i : i + chunk_size]))
     return chunks
 
+
+def chunk_text_sentences(text, max_words=200, overlap_sentences=1):
+    sentences = split_sentences(text=text)
+
+    chunks = []
+    current_chunk = []
+    current_length = 0
+
+    for i, sentence in enumerate(sentences):
+        sentence_length: int = len(sentence.split())
+
+        # if adding this sentence exceeds limit -> finalize chunk
+        if current_length + sentence_length > max_words:
+            chunks.append("".join(current_chunk))
+
+            # overlap: keep last N sentences
+            current_chunk = (
+                current_chunk[-overlap_sentences:] if overlap_sentences > 0 else []
+            )
+            current_length = sum(len(s.split()) for s in current_chunk)
+
+        current_chunk.append(sentence)
+        current_length += sentence_length
+
+    if current_chunk:
+        chunks.append("".join(current_chunk))
+
+    return chunks
 
 def embed_chunks(chunks):
     embeddings = model.encode(chunks)
