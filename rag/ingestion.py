@@ -19,7 +19,7 @@ def load_documents(path: str) -> str:
         return f.read()
 
 
-def chunk_text(text, chunk_size=200) -> List[str]:
+def chunk_text(text, chunk_size=50) -> List[str]:
     words = text.split()
     chunks = []
     for i in range(0, len(words), chunk_size):
@@ -27,7 +27,7 @@ def chunk_text(text, chunk_size=200) -> List[str]:
     return chunks
 
 
-def chunk_text_sentences(text, max_words=200, overlap_sentences=1):
+def chunk_text_sentences(text, max_words=50, overlap_sentences=1):
     sentences = split_sentences(text=text)
 
     chunks = []

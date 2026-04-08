@@ -1,5 +1,6 @@
 from rag.ingestion import chunk_text_sentences, embed_chunks, build_index
 from rag.retrieval import retrieve
+from rag.reranking import rerank
 from rag.generation import generate_answer
 
 
@@ -23,9 +24,14 @@ def run_pipeline(chunking_fn, text, test_data, label):
         query = item["question"]
         expected = item["expected"]
 
-        retrieved: list = retrieve(query=query, index=index, chunks=chunks)
-        retrieved_texts = [r if isinstance(r, str) else r["chunk"] for r in retrieved]
+        # baseline retrieval
+        # retrieved: list = retrieve(query=query, index=index, chunks=chunks, k=3)
+        
+        retrieved: list = retrieve(query=query, index=index, chunks=chunks, k=10)
+        reranked: list = rerank(query=query, retrieved_results=retrieved)
+        retrieved: list = reranked[:3]
 
+        retrieved_texts = [r if isinstance(r, str) else r["chunk"] for r in retrieved]
         answer = generate_answer(query=query, context_chunks=retrieved_texts)
         # Metrics
         is_correct = evaluate_answer(predicted=answer, expected=expected)
