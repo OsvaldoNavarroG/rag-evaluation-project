@@ -8,7 +8,12 @@ def generate_answer(query, context_chunks):
     context = "\n\n".join(context_chunks)
 
     prompt = f"""
-    Answer the question based on the context below.
+    You are a precise question-answering system.
+
+    Answer the question using ONLY the provided context.
+
+    If the answer is not explicitly contained in the context, say:
+    "I don't have enough information to answer this."
 
     Context:
     {context}
