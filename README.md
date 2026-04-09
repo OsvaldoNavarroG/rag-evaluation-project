@@ -1,4 +1,4 @@
-# RAG Retrieval Optimization Project
+# RAG Retrieval Optimization & Evaluation
 
 ⏱️ Time to read: ~1 minute
 
@@ -6,22 +6,29 @@
 
 ## 🚀 Key Results
 
-Improved retrieval performance in a RAG system:
+Built and analyzed a Retrieval-Augmented Generation (RAG) system with **multi-level evaluation**:
 
-* **Retrieval Hit Rate:** 9% → 86% (+77pp)
-* **Answer Accuracy:** 86% → 91%
+* **Retrieval Hit Rate:** up to **86%**
+* **Groundedness (recall):** ~50%
+* **Top-1 Groundedness (precision):** ~45%
+* **Answer Accuracy:** up to **73%**
 
-Identified **chunking as the primary bottleneck** and improved answer quality using **cross-encoder re-ranking**.
+Identified:
+
+* **Chunking as the primary driver of retrieval performance**
+* **Prompting as critical for enforcing grounding**
+* **Reranking impact depends on dataset difficulty**
 
 ---
 
 ## 📌 Overview
 
-This project implements and evaluates a **Retrieval-Augmented Generation (RAG)** pipeline, focusing on:
+This project implements a RAG pipeline and focuses on:
 
-* Diagnosing retrieval vs generation failures
-* Improving retrieval quality through better chunking
-* Increasing answer accuracy via re-ranking
+* Separating **retrieval vs generation errors**
+* Measuring **groundedness (hallucination detection)**
+* Evaluating **ranking quality vs retrieval recall**
+* Understanding when **reranking actually helps**
 
 ---
 
@@ -42,58 +49,98 @@ Query → Retrieval (Top-K) → Re-ranking → LLM → Answer
 
 ---
 
-## 🧪 Evaluation Setup
-
-* Dataset: ~1500+ words (ML concepts)
-* Chunking: 50-word chunks (naive vs sentence-based)
-* Test set: 25 queries (easy / medium / hard)
+## 🧪 Evaluation Framework
 
 ### Metrics
 
-* **Accuracy** — correctness of generated answer
-* **Retrieval Hit Rate** — whether correct context was retrieved
+* **Accuracy** → Is the answer correct?
+* **Retrieval Hit Rate** → Was the correct chunk retrieved? (recall)
+* **Groundedness** → Is the answer supported by *any* retrieved chunk?
+* **Top-1 Groundedness** → Is the answer supported by the *top-ranked* chunk? (precision)
 
 ---
 
 ## 📊 Results
 
-| Method            | Accuracy | Hit Rate |
-| ----------------- | -------- | -------- |
-| Naive Chunking    | 0.86     | 0.09     |
-| Sentence Chunking | 0.86     | 0.86     |
-| + Re-ranking      | **0.91** | 0.86     |
+### Without Re-ranking
+
+| Method            | Accuracy | Hit Rate | Grounded | Top-1 Grounded |
+| ----------------- | -------- | -------- | -------- | -------------- |
+| Naive Chunking    | 0.73     | 0.82     | 0.41     | 0.41           |
+| Sentence Chunking | 0.68     | 0.86     | 0.50     | 0.45           |
 
 ---
 
-## 🔍 Example Improvement
+### With Re-ranking
+
+| Method            | Accuracy | Hit Rate | Grounded | Top-1 Grounded |
+| ----------------- | -------- | -------- | -------- | -------------- |
+| Naive Chunking    | 0.64     | 0.77     | 0.36     | 0.36           |
+| Sentence Chunking | **0.73** | 0.86     | 0.45     | 0.45           |
+
+---
+
+## 🔍 Example: Ranking Failure
 
 **Query:**
-“What is machine learning used for in image tasks?”
+“What helps reduce overfitting in models?”
 
-**Before re-ranking:**
+**Top retrieved chunk (incorrect ranking):**
 
-* Retrieved: generic ML usage, image processing
-* Answer: partially correct
+```
+Data preprocessing includes cleaning, normalizing...
+Overfitting occurs when...
+```
 
-**After re-ranking:**
+**Correct chunk (ranked lower):**
 
-* Retrieved: image recognition (correct chunk)
-* Answer: correct
+```
+Regularization techniques help prevent overfitting...
+```
 
-→ Re-ranking improves **context precision**, leading to better answers
+→ Retrieval succeeded, but **ranking failed**
+→ Demonstrates need for ranking-aware evaluation
 
 ---
 
 ## 🧠 Key Insights
 
-* **Chunking dominates retrieval performance**
-  → Sentence-based chunking improved hit rate dramatically
+### 1. Chunking Dominates Retrieval Performance
 
-* **LLM knowledge can mask retrieval failures**
-  → High accuracy does not guarantee correct retrieval
+* Sentence-based chunking significantly improves hit rate
+* Poor chunking can completely break retrieval
 
-* **Re-ranking improves precision, not recall**
-  → Better ordering of retrieved chunks improves answer quality
+---
+
+### 2. LLMs Can Mask Retrieval Failures
+
+* High accuracy without grounding indicates reliance on prior knowledge
+* Prompting is required to enforce context usage
+
+---
+
+### 3. Groundedness ≠ Accuracy
+
+* Correct answers are not always supported by retrieved context
+* Groundedness is essential to detect hallucinations
+
+---
+
+### 4. Reranking Improves Context Quality, Not Always Ranking Metrics
+
+* Improved answer accuracy in some cases
+* Did **not significantly improve top-1 grounding** in this dataset
+* Indicates:
+
+  > Reranking effectiveness depends on retrieval difficulty and data ambiguity
+
+---
+
+### 5. Precision vs Recall in Retrieval
+
+* Hit rate measures **recall**
+* Top-1 groundedness measures **ranking precision**
+* Both are required for proper evaluation
 
 ---
 
@@ -109,14 +156,15 @@ python main.py
 ## 🎯 What This Demonstrates
 
 * End-to-end RAG system design
-* Retrieval vs generation error analysis
-* Practical improvements using IR techniques
-* Measurable, data-driven performance gains
+* Retrieval vs generation error decomposition
+* Hallucination detection via groundedness
+* Precision vs recall evaluation in retrieval
+* Real-world limitations of reranking
 
 ---
 
 ## 🔧 Next Steps
 
-* Hybrid search (BM25 + embeddings)
-* Query expansion
-* Groundedness evaluation
+* Increase dataset difficulty to better expose reranking gains
+* LLM-as-judge evaluation for semantic groundedness
+* Hybrid retrieval (BM25 + embeddings)
