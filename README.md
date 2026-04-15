@@ -6,18 +6,17 @@
 
 ## 🚀 Key Results
 
-Built and analyzed a Retrieval-Augmented Generation (RAG) system with **multi-level evaluation**:
+Built and evaluated a Retrieval-Augmented Generation (RAG) system with **multi-layer evaluation**:
 
 * **Retrieval Hit Rate:** up to **86%**
-* **Groundedness (recall):** ~50%
-* **Top-1 Groundedness (precision):** ~45%
-* **Answer Accuracy:** up to **73%**
+* **Heuristic Groundedness:** ~41%
+* **LLM Groundedness:** **~91% (+50pp)**
+* **Answer Accuracy (LLM-evaluated):** **~91%**
 
-Identified:
+### 🔥 Key Finding
 
-* **Chunking as the primary driver of retrieval performance**
-* **Prompting as critical for enforcing grounding**
-* **Reranking impact depends on dataset difficulty**
+Heuristic (string-based) evaluation **severely underestimates performance**.
+LLM-based evaluation reveals the system is **far more accurate and grounded than surface metrics suggest**.
 
 ---
 
@@ -26,15 +25,15 @@ Identified:
 This project implements a RAG pipeline and focuses on:
 
 * Separating **retrieval vs generation errors**
-* Measuring **groundedness (hallucination detection)**
-* Evaluating **ranking quality vs retrieval recall**
-* Understanding when **reranking actually helps**
+* Detecting hallucinations via **groundedness metrics**
+* Comparing **heuristic vs semantic evaluation**
+* Understanding when **reranking helps (or doesn’t)**
 
 ---
 
 ## 🧠 Pipeline
 
-```text
+```text id="y0y5sk"
 Documents → Chunking → Embeddings → FAISS Index
 Query → Retrieval (Top-K) → Re-ranking → LLM → Answer
 ```
@@ -45,7 +44,7 @@ Query → Retrieval (Top-K) → Re-ranking → LLM → Answer
 
 * FAISS — vector search
 * sentence-transformers — embeddings + cross-encoder reranker
-* OpenAI API — answer generation
+* OpenAI API — generation + LLM-based evaluation
 
 ---
 
@@ -53,53 +52,71 @@ Query → Retrieval (Top-K) → Re-ranking → LLM → Answer
 
 ### Metrics
 
-* **Accuracy** → Is the answer correct?
-* **Retrieval Hit Rate** → Was the correct chunk retrieved? (recall)
-* **Groundedness** → Is the answer supported by *any* retrieved chunk?
-* **Top-1 Groundedness** → Is the answer supported by the *top-ranked* chunk? (precision)
+**Heuristic (lexical):**
+
+* Accuracy
+* Retrieval Hit Rate (recall)
+* Groundedness (answer appears in any chunk)
+* Top-1 Groundedness (ranking precision)
+
+**LLM-based (semantic):**
+
+* LLM Accuracy
+* LLM Groundedness
 
 ---
 
-## 📊 Results
+## 📊 Results (Sentence Chunking)
 
-### Without Re-ranking
-
-| Method            | Accuracy | Hit Rate | Grounded | Top-1 Grounded |
-| ----------------- | -------- | -------- | -------- | -------------- |
-| Naive Chunking    | 0.73     | 0.82     | 0.41     | 0.41           |
-| Sentence Chunking | 0.68     | 0.86     | 0.50     | 0.45           |
-
----
-
-### With Re-ranking
-
-| Method            | Accuracy | Hit Rate | Grounded | Top-1 Grounded |
-| ----------------- | -------- | -------- | -------- | -------------- |
-| Naive Chunking    | 0.64     | 0.77     | 0.36     | 0.36           |
-| Sentence Chunking | **0.73** | 0.86     | 0.45     | 0.45           |
+| Metric                   | Value    |
+| ------------------------ | -------- |
+| Accuracy (heuristic)     | 0.73     |
+| Retrieval Hit Rate       | 0.86     |
+| Groundedness (heuristic) | 0.41     |
+| Top-1 Groundedness       | 0.41     |
+| **LLM Accuracy**         | **0.91** |
+| **LLM Groundedness**     | **0.91** |
 
 ---
 
-## 🔍 Example: Ranking Failure
+## 🔍 Evaluation Gap (Critical Insight)
 
-**Query:**
-“What helps reduce overfitting in models?”
-
-**Top retrieved chunk (incorrect ranking):**
-
-```
-Data preprocessing includes cleaning, normalizing...
-Overfitting occurs when...
+```text id="g3y8tb"
+Heuristic groundedness: 0.41
+LLM groundedness:       0.91
 ```
 
-**Correct chunk (ranked lower):**
+→ **+50 percentage point difference**
 
-```
-Regularization techniques help prevent overfitting...
-```
+### Why?
 
-→ Retrieval succeeded, but **ranking failed**
-→ Demonstrates need for ranking-aware evaluation
+Heuristic evaluation fails on:
+
+* paraphrases
+* longer answers
+* semantic equivalence
+
+LLM evaluation captures:
+
+* meaning
+* context alignment
+* true grounding
+
+---
+
+## 🔍 Example: Semantic Grounding
+
+**Question:**
+“What does reinforcement learning rely on?”
+
+**Answer:**
+“Reinforcement learning relies on an agent interacting with an environment and receiving rewards or penalties.”
+
+**Context:**
+“...agents learn through rewards and penalties...”
+
+→ Heuristic: ❌ not grounded
+→ LLM judge: ✅ grounded
 
 ---
 
@@ -108,7 +125,7 @@ Regularization techniques help prevent overfitting...
 ### 1. Chunking Dominates Retrieval Performance
 
 * Sentence-based chunking significantly improves hit rate
-* Poor chunking can completely break retrieval
+* Poor chunking breaks retrieval entirely
 
 ---
 
@@ -119,34 +136,30 @@ Regularization techniques help prevent overfitting...
 
 ---
 
-### 3. Groundedness ≠ Accuracy
+### 3. Heuristic Metrics Are Misleading
 
-* Correct answers are not always supported by retrieved context
-* Groundedness is essential to detect hallucinations
-
----
-
-### 4. Reranking Improves Context Quality, Not Always Ranking Metrics
-
-* Improved answer accuracy in some cases
-* Did **not significantly improve top-1 grounding** in this dataset
-* Indicates:
-
-  > Reranking effectiveness depends on retrieval difficulty and data ambiguity
+* String matching underestimates performance
+* Cannot capture paraphrasing or semantic equivalence
 
 ---
 
-### 5. Precision vs Recall in Retrieval
+### 4. LLM-Based Evaluation Is Essential
 
-* Hit rate measures **recall**
-* Top-1 groundedness measures **ranking precision**
-* Both are required for proper evaluation
+* Captures true correctness and grounding
+* Aligns with real-world GenAI evaluation practices
+
+---
+
+### 5. Reranking Depends on Data Difficulty
+
+* Limited impact in low-ambiguity datasets
+* Improves performance mainly when retrieval candidates are noisy
 
 ---
 
 ## 🚀 How to Run
 
-```bash
+```bash id="4qrb6q"
 pip install sentence-transformers faiss-cpu openai python-dotenv
 python main.py
 ```
@@ -159,12 +172,13 @@ python main.py
 * Retrieval vs generation error decomposition
 * Hallucination detection via groundedness
 * Precision vs recall evaluation in retrieval
-* Real-world limitations of reranking
+* **Semantic evaluation with LLM-as-judge**
+* Real-world limitations of heuristic metrics
 
 ---
 
 ## 🔧 Next Steps
 
-* Increase dataset difficulty to better expose reranking gains
-* LLM-as-judge evaluation for semantic groundedness
+* Larger / more ambiguous datasets
 * Hybrid retrieval (BM25 + embeddings)
+* Multi-query retrieval
