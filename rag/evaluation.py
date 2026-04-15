@@ -2,6 +2,10 @@ from rag.ingestion import chunk_text_sentences, embed_chunks, build_index
 from rag.retrieval import retrieve
 from rag.reranking import rerank
 from rag.generation import generate_answer
+from rag.llm_judge import LLMJudge
+from typing import List
+
+judge = LLMJudge()
 
 
 def normalize(text: str) -> str:
@@ -48,7 +52,7 @@ def evaluate_answer(predicted, expected):
     return expected in predicted
 
 
-def run_pipeline(chunking_fn, text, test_data, label):
+def run_pipeline(chunking_fn, text, test_data, label) -> List[dict]:
     print(f"\n===== {label} =====")
 
     chunks = chunking_fn(text)
@@ -62,7 +66,7 @@ def run_pipeline(chunking_fn, text, test_data, label):
         expected = item["expected"]
 
         # baseline retrieval
-        #retrieved: list = retrieve(query=query, index=index, chunks=chunks, k=3)
+        # retrieved: list = retrieve(query=query, index=index, chunks=chunks, k=3)
 
         # reranked retrieval
         retrieved: list = retrieve(query=query, index=index, chunks=chunks, k=10)
@@ -79,25 +83,18 @@ def run_pipeline(chunking_fn, text, test_data, label):
             answer=answer, context_chunks=retrieved_texts
         )
 
-        # debug snippets
-        # if not grounded:
-        #     print("\n[UNGROUNDED ANSWER]")
-        #     print("Q:", query)
-        #     print("A:", answer)
-        #     print("\nTop chunks:")
-        #     for c in retrieved_texts:
-        #         print("-", c[:120])
+        # evaluate with LLMJudge
+        llm_eval: dict = judge.evaluate(
+            question=query, context_chunks=retrieved_texts, answer=answer
+        )
+        llm_correct = llm_eval["correct"]
+        llm_grounded = llm_eval["grounded"]
 
-        if grounded and not grounded_top1:
-            print("\n[RANKING ISSUE]")
+        # debug snippet
+        if llm_grounded and not grounded:
+            print("\n[SEMANTIC GROUNDING DETECTED]")
             print("Q:", query)
-            print("A:", answer)
-
-            print("\nTop chunk:")
-            print("-", retrieved_texts[0][:120])
-            print("\nCorrect chunk exists but not ranked first:")
-            for c in retrieved_texts[1:]:
-                print("-", c[:120])
+            print("Answer:", answer)
 
         results.append(
             {
@@ -106,13 +103,10 @@ def run_pipeline(chunking_fn, text, test_data, label):
                 "retrieval_hit": hit,
                 "grounded": grounded,
                 "grounded_top1": grounded_top1,
+                "llm_correct": llm_correct,
+                "llm_grounded": llm_grounded,
             }
         )
-
-        # print("\n---")
-        # print("Q:", query)
-        # print("Hit:", hit)
-        # print("Correct:", is_correct)
 
     return results
 
@@ -137,7 +131,7 @@ def compare_chunking_approaches(text, test_data):
     print("Sentence:", summarize(results=sentence_results))
 
 
-def summarize(results) -> dict:
+def summarize(results: List[dict]) -> dict:
     total: int = len(results)
     correct: int = sum(r["correct"] for r in results)
     hits: int = sum(r["retrieval_hit"] for r in results)
@@ -148,4 +142,6 @@ def summarize(results) -> dict:
         "retrieval_hit_rate": hits / total,
         "groundedness": grounded / total,
         "grounded_top1": sum(r["grounded_top1"] for r in results) / total,
+        "llm_accuracy": sum(r["llm_correct"] for r in results) / total,
+        "llm_groundedness": sum(r["llm_grounded"] for r in results) / total,
     }

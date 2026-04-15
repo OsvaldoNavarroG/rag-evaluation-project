@@ -2,7 +2,6 @@ from typing import List
 from rag.ingestion import load_documents
 from rag.evaluation import compare_chunking_approaches
 
-
 # 1. Load and prepare data
 text: str = load_documents(path="data/docs.txt")
 
