@@ -1,11 +1,15 @@
 import numpy as np
 from rag.ingestion import chunk_text_sentences, embed_chunks, build_index
-from rag.retrieval import retrieve
+from rag.bm25 import BM25Retriever
+from rag.hybrid import hybrid_retrieve
+from rag.retrieval import dense_retrieve
 from rag.reranking import rerank
 from rag.generation import generate_answer
 from rag.llm_judge import LLMJudge
 from typing import List
+from sentence_transformers import SentenceTransformer
 
+model = SentenceTransformer("all-MiniLM-L6-v2")
 judge = LLMJudge()
 
 
@@ -60,6 +64,11 @@ def run_pipeline(chunking_fn, text, test_data, label) -> List[dict]:
     embeddings: np.ndarray = embed_chunks(chunks=chunks)
     index = build_index(embeddings=embeddings)
 
+    bm25 = BM25Retriever(chunks=chunks)
+
+    def dense_fn(query: str, k: int):
+        return dense_retrieve(query=query, index=index, chunks=chunks, model=model, k=k)
+
     results = []
 
     for item in test_data:
@@ -68,11 +77,20 @@ def run_pipeline(chunking_fn, text, test_data, label) -> List[dict]:
 
         # baseline retrieval
         # retrieved: list = retrieve(query=query, index=index, chunks=chunks, k=3)
+        # retrieved: list = dense_retrieve(
+        #     query=query, index=index, chunks=chunks, model=model, k=5
+        # )
 
         # reranked retrieval
-        retrieved: list = retrieve(query=query, index=index, chunks=chunks, k=10)
+        retrieved: list = hybrid_retrieve(
+            query=query,
+            dense_retrieve_fn=dense_fn,
+            bm25_retriever=bm25,
+            k_dense=5,
+            k_bm25=5,
+        )
         reranked: list = rerank(query=query, retrieved_results=retrieved)
-        retrieved = reranked[:3]
+        retrieved = reranked[:5]
 
         retrieved_texts = [r if isinstance(r, str) else r["chunk"] for r in retrieved]
         answer = generate_answer(query=query, context_chunks=retrieved_texts)
@@ -92,10 +110,13 @@ def run_pipeline(chunking_fn, text, test_data, label) -> List[dict]:
         llm_grounded = llm_eval["grounded"]
 
         # debug snippet
-        if llm_grounded and not grounded:
-            print("\n[SEMANTIC GROUNDING DETECTED]")
-            print("Q:", query)
-            print("Answer:", answer)
+        # if llm_grounded and not grounded:
+        #     print("\n[SEMANTIC GROUNDING DETECTED]")
+        #     print("Q:", query)
+        #     print("Answer:", answer)
+        print("\n[HYBRID RETRIEVAL]")
+        for r in retrieved:
+            print(f"{r['source']}: {r['chunk'][:100]}")
 
         results.append(
             {

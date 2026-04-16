@@ -1,14 +1,16 @@
-from sentence_transformers import SentenceTransformer
+from typing import Any, Dict, List
 import numpy as np
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
 
 
-def retrieve(query, index, chunks, k=3):
+
+def dense_retrieve(query, index, chunks, model, k=5) -> List[Dict[str, Any]]:
     query_embedding = model.encode([query])
     distances, indices = index.search(np.array(query_embedding), k)
 
-    results = []
+    results: List[Dict[str, Any]] = []
     for i, idx in enumerate(indices[0]):
-        results.append({"chunk": chunks[idx], "score": float(distances[0][i])})
+        results.append(
+            {"chunk": chunks[idx], "score": float(distances[0][i]), "source": "dense"}
+        )
     return results
