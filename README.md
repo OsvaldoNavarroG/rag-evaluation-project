@@ -6,179 +6,198 @@
 
 ## 🚀 Key Results
 
-Built and evaluated a Retrieval-Augmented Generation (RAG) system with **multi-layer evaluation**:
+Evaluated multiple RAG configurations with **heuristic and LLM-based metrics**:
 
-* **Retrieval Hit Rate:** up to **86%**
-* **Heuristic Groundedness:** ~41%
-* **LLM Groundedness:** **~91% (+50pp)**
-* **Answer Accuracy (LLM-evaluated):** **~91%**
+* **Retrieval Hit Rate:** ~86% (stable across methods)
+* **LLM Accuracy:** up to **91%**
+* **LLM Groundedness:** up to **91%**
+* **Groundedness (heuristic):** ~41–50%
 
-### 🔥 Key Finding
+### 🔥 Key Findings
 
-Heuristic (string-based) evaluation **severely underestimates performance**.
-LLM-based evaluation reveals the system is **far more accurate and grounded than surface metrics suggest**.
+1. **Evaluation gap:**
+   Heuristic groundedness (~0.41) vs LLM groundedness (~0.91)
+   → **+50pp difference due to semantic evaluation**
+
+2. **Hybrid retrieval improves ranking, not recall:**
+
+   * No change in hit rate (~0.86)
+   * Significant improvement in answer quality and grounding
+
+3. **Best configuration:**
+   → **Hybrid retrieval + reranking**
 
 ---
 
 ## 📌 Overview
 
-This project implements a RAG pipeline and focuses on:
+This project builds and evaluates a RAG pipeline focusing on:
 
-* Separating **retrieval vs generation errors**
-* Detecting hallucinations via **groundedness metrics**
-* Comparing **heuristic vs semantic evaluation**
-* Understanding when **reranking helps (or doesn’t)**
+* Retrieval vs generation error analysis
+* Hallucination detection via groundedness
+* Heuristic vs semantic evaluation
+* Retrieval strategy comparison (dense vs hybrid)
 
 ---
 
 ## 🧠 Pipeline
 
-```text id="y0y5sk"
-Documents → Chunking → Embeddings → FAISS Index
-Query → Retrieval (Top-K) → Re-ranking → LLM → Answer
+```text id="xg3m6z"
+Documents → Chunking → Embeddings → FAISS
+Query → Retrieval → (Hybrid) → Reranking → LLM → Answer
 ```
 
 ---
 
 ## ⚙️ Tech Stack
 
-* FAISS — vector search
-* sentence-transformers — embeddings + cross-encoder reranker
+* FAISS — dense vector retrieval
+* BM25 (rank-bm25) — lexical retrieval
+* sentence-transformers — embeddings + reranker
 * OpenAI API — generation + LLM-based evaluation
 
 ---
 
-## 🧪 Evaluation Framework
+## 🧪 Retrieval Strategies Compared
 
-### Metrics
+### 1. Dense Retrieval
 
-**Heuristic (lexical):**
+* Semantic similarity (embeddings)
+* Strong recall
+* Weaker keyword precision
+
+---
+
+### 2. Hybrid Retrieval (BM25 + Dense)
+
+* Combines:
+
+  * semantic matching (dense)
+  * keyword matching (BM25)
+* Adds candidate diversity
+
+---
+
+### 3. Hybrid + Reranking (**Best**)
+
+* Cross-encoder selects best chunks
+* Improves ranking quality and grounding
+
+---
+
+## 📊 Results (Best Configuration)
+
+| Metric               | Value    |
+| -------------------- | -------- |
+| Retrieval Hit Rate   | 0.86     |
+| Accuracy             | 0.82     |
+| Groundedness         | 0.45     |
+| Top-1 Groundedness   | 0.45     |
+| **LLM Accuracy**     | **0.91** |
+| **LLM Groundedness** | **0.91** |
+
+---
+
+## 🔍 Key Insight: Ranking vs Recall
+
+```text id="o0o9e4"
+Dense only:
+  High recall, moderate ranking quality
+
+Hybrid:
+  Same recall, more diverse candidates
+
+Hybrid + rerank:
+  Best ranking → best answers
+```
+
+### Conclusion
+
+Hybrid retrieval did **not** improve recall but improved:
+
+* answer accuracy
+* groundedness
+* top-ranked chunk quality
+
+---
+
+## 🔍 Why Hybrid Helps
+
+Dense retrieval:
+
+* captures meaning
+* misses exact terms
+
+BM25:
+
+* captures keywords
+* misses semantics
+
+👉 Hybrid combines both, giving the reranker **better candidates to choose from**
+
+---
+
+## 🔍 Chunking Interaction
+
+* Sentence chunking → strong baseline
+* Naive chunking → benefits more from hybrid
+
+### Insight
+
+> Hybrid retrieval is most useful when baseline retrieval quality is suboptimal.
+
+---
+
+## 🧠 Evaluation Framework
+
+### Heuristic (lexical)
 
 * Accuracy
-* Retrieval Hit Rate (recall)
-* Groundedness (answer appears in any chunk)
-* Top-1 Groundedness (ranking precision)
+* Retrieval Hit Rate
+* Groundedness
+* Top-1 Groundedness
 
-**LLM-based (semantic):**
+### LLM-based (semantic)
 
 * LLM Accuracy
 * LLM Groundedness
 
 ---
 
-## 📊 Results (Sentence Chunking)
+## 🔍 Evaluation Gap
 
-| Metric                   | Value    |
-| ------------------------ | -------- |
-| Accuracy (heuristic)     | 0.73     |
-| Retrieval Hit Rate       | 0.86     |
-| Groundedness (heuristic) | 0.41     |
-| Top-1 Groundedness       | 0.41     |
-| **LLM Accuracy**         | **0.91** |
-| **LLM Groundedness**     | **0.91** |
-
----
-
-## 🔍 Evaluation Gap (Critical Insight)
-
-```text id="g3y8tb"
-Heuristic groundedness: 0.41
-LLM groundedness:       0.91
+```text id="6u6s5h"
+Heuristic groundedness: ~0.41
+LLM groundedness:       ~0.91
 ```
 
-→ **+50 percentage point difference**
-
-### Why?
-
-Heuristic evaluation fails on:
-
-* paraphrases
-* longer answers
-* semantic equivalence
-
-LLM evaluation captures:
-
-* meaning
-* context alignment
-* true grounding
-
----
-
-## 🔍 Example: Semantic Grounding
-
-**Question:**
-“What does reinforcement learning rely on?”
-
-**Answer:**
-“Reinforcement learning relies on an agent interacting with an environment and receiving rewards or penalties.”
-
-**Context:**
-“...agents learn through rewards and penalties...”
-
-→ Heuristic: ❌ not grounded
-→ LLM judge: ✅ grounded
-
----
-
-## 🧠 Key Insights
-
-### 1. Chunking Dominates Retrieval Performance
-
-* Sentence-based chunking significantly improves hit rate
-* Poor chunking breaks retrieval entirely
-
----
-
-### 2. LLMs Can Mask Retrieval Failures
-
-* High accuracy without grounding indicates reliance on prior knowledge
-* Prompting is required to enforce context usage
-
----
-
-### 3. Heuristic Metrics Are Misleading
-
-* String matching underestimates performance
-* Cannot capture paraphrasing or semantic equivalence
-
----
-
-### 4. LLM-Based Evaluation Is Essential
-
-* Captures true correctness and grounding
-* Aligns with real-world GenAI evaluation practices
-
----
-
-### 5. Reranking Depends on Data Difficulty
-
-* Limited impact in low-ambiguity datasets
-* Improves performance mainly when retrieval candidates are noisy
-
----
-
-## 🚀 How to Run
-
-```bash id="4qrb6q"
-pip install sentence-transformers faiss-cpu openai python-dotenv
-python main.py
-```
+→ Traditional metrics underestimate performance due to paraphrasing
 
 ---
 
 ## 🎯 What This Demonstrates
 
 * End-to-end RAG system design
-* Retrieval vs generation error decomposition
-* Hallucination detection via groundedness
-* Precision vs recall evaluation in retrieval
+* Retrieval vs ranking decomposition
+* Hybrid retrieval (BM25 + dense)
+* Cross-encoder reranking
+* Hallucination detection
 * **Semantic evaluation with LLM-as-judge**
 * Real-world limitations of heuristic metrics
 
 ---
 
+## 🚀 How to Run
+
+```bash id="5i2m3g"
+pip install sentence-transformers faiss-cpu rank-bm25 openai python-dotenv
+python main.py
+```
+
+---
+
 ## 🔧 Next Steps
 
+* Query expansion / multi-query retrieval
 * Larger / more ambiguous datasets
-* Hybrid retrieval (BM25 + embeddings)
-* Multi-query retrieval
+* Hybrid score weighting (BM25 vs dense)
