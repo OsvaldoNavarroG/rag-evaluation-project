@@ -9,7 +9,7 @@ import numpy as np
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
 
-def split_sentences(text):
+def split_sentences(text) -> List[str]:
     # try nltk first, then switch to spacy
     return sent_tokenize(text)
 
@@ -27,14 +27,14 @@ def chunk_text(text, chunk_size=50) -> List[str]:
     return chunks
 
 
-def chunk_text_sentences(text, max_words=50, overlap_sentences=1):
-    sentences = split_sentences(text=text)
+def chunk_text_sentences(text, max_words=50, overlap_sentences=1) -> List[str]:
+    sentences: List[str] = split_sentences(text=text)
 
     chunks = []
-    current_chunk = []
+    current_chunk: List[str] = []
     current_length = 0
 
-    for i, sentence in enumerate(sentences):
+    for _, sentence in enumerate(sentences):
         sentence_length: int = len(sentence.split())
 
         # if adding this sentence exceeds limit -> finalize chunk
@@ -55,8 +55,9 @@ def chunk_text_sentences(text, max_words=50, overlap_sentences=1):
 
     return chunks
 
-def embed_chunks(chunks):
-    embeddings = model.encode(chunks)
+
+def embed_chunks(chunks: List[str]) -> np.ndarray:
+    embeddings = model.encode(sentences=chunks)
     return np.array(embeddings)
 
 

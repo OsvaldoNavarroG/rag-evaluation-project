@@ -1,3 +1,4 @@
+import numpy as np
 from rag.ingestion import chunk_text_sentences, embed_chunks, build_index
 from rag.retrieval import retrieve
 from rag.reranking import rerank
@@ -55,8 +56,8 @@ def evaluate_answer(predicted, expected):
 def run_pipeline(chunking_fn, text, test_data, label) -> List[dict]:
     print(f"\n===== {label} =====")
 
-    chunks = chunking_fn(text)
-    embeddings = embed_chunks(chunks=chunks)
+    chunks: List[str] = chunking_fn(text)
+    embeddings: np.ndarray = embed_chunks(chunks=chunks)
     index = build_index(embeddings=embeddings)
 
     results = []
@@ -71,7 +72,7 @@ def run_pipeline(chunking_fn, text, test_data, label) -> List[dict]:
         # reranked retrieval
         retrieved: list = retrieve(query=query, index=index, chunks=chunks, k=10)
         reranked: list = rerank(query=query, retrieved_results=retrieved)
-        retrieved: list = reranked[:3]
+        retrieved = reranked[:3]
 
         retrieved_texts = [r if isinstance(r, str) else r["chunk"] for r in retrieved]
         answer = generate_answer(query=query, context_chunks=retrieved_texts)
@@ -114,13 +115,13 @@ def run_pipeline(chunking_fn, text, test_data, label) -> List[dict]:
 def compare_chunking_approaches(text, test_data):
     from rag.ingestion import chunk_text as naive_chunk_text
 
-    naive_results = run_pipeline(
+    naive_results: List[dict] = run_pipeline(
         chunking_fn=naive_chunk_text,
         text=text,
         test_data=test_data,
         label="Naive Chunking",
     )
-    sentence_results = run_pipeline(
+    sentence_results: List[dict] = run_pipeline(
         chunking_fn=chunk_text_sentences,
         text=text,
         test_data=test_data,
