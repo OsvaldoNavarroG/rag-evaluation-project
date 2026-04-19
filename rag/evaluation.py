@@ -6,7 +6,7 @@ from rag.retrieval import dense_retrieve
 from rag.reranking import rerank
 from rag.generation import generate_answer
 from rag.llm_judge import LLMJudge
-from typing import List
+from typing import Any, Dict, List
 from sentence_transformers import SentenceTransformer
 
 model = SentenceTransformer("all-MiniLM-L6-v2")
@@ -57,7 +57,7 @@ def evaluate_answer(predicted, expected):
     return expected in predicted
 
 
-def run_pipeline(chunking_fn, text, test_data, label) -> List[dict]:
+def run_pipeline(chunking_fn, text, test_data, label) -> List[Dict[str, Any]]:
     print(f"\n===== {label} =====")
 
     chunks: List[str] = chunking_fn(text)
@@ -133,7 +133,7 @@ def run_pipeline(chunking_fn, text, test_data, label) -> List[dict]:
     return results
 
 
-def compare_chunking_approaches(text, test_data):
+def compare_chunking_approaches(text: str, test_data: List[Dict[str, str]]):
     from rag.ingestion import chunk_text as naive_chunk_text
 
     naive_results: List[dict] = run_pipeline(
