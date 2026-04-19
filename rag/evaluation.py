@@ -6,11 +6,14 @@ from rag.retrieval import dense_retrieve
 from rag.reranking import rerank
 from rag.generation import generate_answer
 from rag.llm_judge import LLMJudge
+from rag.multi_query import MultiQueryRetriever
+from rag.query_expansion import QueryExpander
 from typing import Any, Dict, List
 from sentence_transformers import SentenceTransformer
 
 model = SentenceTransformer("all-MiniLM-L6-v2")
 judge = LLMJudge()
+expander = QueryExpander(n_queries=3)
 
 
 def normalize(text: str) -> str:
@@ -69,6 +72,19 @@ def run_pipeline(chunking_fn, text, test_data, label) -> List[Dict[str, Any]]:
     def dense_fn(query: str, k: int):
         return dense_retrieve(query=query, index=index, chunks=chunks, model=model, k=k)
 
+    def hybrid_fn(query: str):
+        return hybrid_retrieve(
+            query=query,
+            dense_retrieve_fn=dense_fn,
+            bm25_retriever=bm25,
+            k_dense=5,
+            k_bm25=5,
+        )
+
+    multi_retriever = MultiQueryRetriever(
+        retriever_fn=hybrid_fn, query_expander=expander
+    )
+
     results = []
 
     for item in test_data:
@@ -82,13 +98,15 @@ def run_pipeline(chunking_fn, text, test_data, label) -> List[Dict[str, Any]]:
         # )
 
         # reranked retrieval
-        retrieved: list = hybrid_retrieve(
-            query=query,
-            dense_retrieve_fn=dense_fn,
-            bm25_retriever=bm25,
-            k_dense=5,
-            k_bm25=5,
-        )
+        # retrieved: list = hybrid_retrieve(
+        #     query=query,
+        #     dense_retrieve_fn=dense_fn,
+        #     bm25_retriever=bm25,
+        #     k_dense=5,
+        #     k_bm25=5,
+        # )
+
+        retrieved: list = multi_retriever.retrieve(question=query)
         reranked: list = rerank(query=query, retrieved_results=retrieved)
         retrieved = reranked[:5]
 
@@ -114,9 +132,14 @@ def run_pipeline(chunking_fn, text, test_data, label) -> List[Dict[str, Any]]:
         #     print("\n[SEMANTIC GROUNDING DETECTED]")
         #     print("Q:", query)
         #     print("Answer:", answer)
-        print("\n[HYBRID RETRIEVAL]")
-        for r in retrieved:
-            print(f"{r['source']}: {r['chunk'][:100]}")
+
+        # print("\n[HYBRID RETRIEVAL]")
+        # for r in retrieved:
+        #     print(f"{r['source']}: {r['chunk'][:100]}")
+        # expanded_queries = expander.generate(question=query)
+        # print("\n[MULTI-QUERY]")
+        # for q in expanded_queries:
+        #     print("-", q)
 
         results.append(
             {
