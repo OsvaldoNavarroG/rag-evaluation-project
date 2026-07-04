@@ -42,3 +42,15 @@ def test_extract_cited_claims_multiple_sentences() -> None:
         {"claim": "Image recognition classifies images.", "citation_indices": [2]},
     ]
 
+
+def test_extract_cited_claims_multiple_citations() -> None:
+    answer = "Image recognition is a computer-vision task [2][4]."
+
+    result = extract_cited_claims(answer=answer)
+
+    assert result == [
+        {
+            "claim": "Image recognition is a computer-vision task.",
+            "citation_indices": [2, 4],
+        }
+    ]
