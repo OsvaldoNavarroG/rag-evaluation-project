@@ -1,6 +1,6 @@
 import re
 from rag.helpers import normalize
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List, Set, TypedDict
 
 STOPWORDS = {
     "the",
@@ -30,6 +30,21 @@ STOPWORDS = {
     "as",
     "such",
 }
+
+
+class CitedClaim(TypedDict):
+    claim: str
+    citation_indices: List[int]
+
+
+def remove_citations(text: str) -> str:
+    """Removes numeric citations such as [0] and [12] from text."""
+    text_without_citations = re.sub(r"\[\d+\]", "", text)
+
+    # Remove spaces left before punctuation: "claim ." -> "claim."
+    text_without_citations = re.sub(r"\s+([.,;:!?])", r"\1", text_without_citations)
+    # Normalize repeated whitespace
+    return re.sub(r"\s+", " ", text_without_citations).strip()
 
 
 def extract_citations(answer: str) -> List[int]:
