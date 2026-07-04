@@ -1,6 +1,7 @@
 import re
 from rag.helpers import normalize
 from typing import Any, Dict, List, Set, TypedDict
+from nltk import sent_tokenize
 
 STOPWORDS = {
     "the",
@@ -45,6 +46,30 @@ def remove_citations(text: str) -> str:
     text_without_citations = re.sub(r"\s+([.,;:!?])", r"\1", text_without_citations)
     # Normalize repeated whitespace
     return re.sub(r"\s+", " ", text_without_citations).strip()
+
+
+def extract_cited_claims(answer: str) -> List[CitedClaim]:
+    """
+    Split an answer into sentence level claims and extracts the citations
+    attached to each claim.
+
+    Sentences without citations are retained with an empty citation list.
+    This allows citation completeness to be evaluated later.
+    """
+    if not answer.strip():
+        return []
+
+    claims: List[CitedClaim] = []
+
+    for sentence in sent_tokenize(answer):
+        citation_indices = list(dict.fromkeys(extract_citations(answer=sentence)))
+        claim_text = remove_citations(text=sentence)
+        if not claim_text:
+            continue
+
+        claims.append({"claim": claim_text, "citation_indices": citation_indices})
+
+    return claims
 
 
 def extract_citations(answer: str) -> List[int]:
