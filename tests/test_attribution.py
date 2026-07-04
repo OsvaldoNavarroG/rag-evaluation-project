@@ -54,3 +54,28 @@ def test_extract_cited_claims_multiple_citations() -> None:
             "citation_indices": [2, 4],
         }
     ]
+
+
+def test_extract_cited_claims_deduplicates_citations() -> None:
+    answer = "The claim is supported by several passages [3][1][3][2]."
+    result = extract_cited_claims(answer=answer)
+    assert result[0]["citation_indices"] == [3, 1, 2]
+
+
+def test_extract_cited_claims_retains_uncited_claims() -> None:
+    answer = (
+        "Computer vision interprets visual information [1]." "It has many applications"
+    )
+    result = extract_cited_claims(answer=answer)
+    answer = result == [
+        {
+            "claim": "Computer vision interprets visual information.",
+            "citation_indices": [1],
+        },
+        {"claim": "It has many applications", "citation_indices": []},
+    ]
+
+
+def test_extract_cited_claims_empty_answer() -> None:
+    assert extract_cited_claims("") == []
+    assert extract_cited_claims("     ") == []
