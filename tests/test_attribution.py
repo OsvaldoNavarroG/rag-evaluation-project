@@ -64,10 +64,10 @@ def test_extract_cited_claims_deduplicates_citations() -> None:
 
 def test_extract_cited_claims_retains_uncited_claims() -> None:
     answer = (
-        "Computer vision interprets visual information [1]." "It has many applications"
+        "Computer vision interprets visual information [1]. " "It has many applications"
     )
     result = extract_cited_claims(answer=answer)
-    answer = result == [
+    assert result == [
         {
             "claim": "Computer vision interprets visual information.",
             "citation_indices": [1],
