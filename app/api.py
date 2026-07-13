@@ -3,12 +3,16 @@ from fastapi import FastAPI, HTTPException
 from typing import Any, Dict
 from app.schemas import QueryRequest, QueryResponse
 from rag.ingestion import ensure_nltk_resources
-from rag.pipeline import run_rag
+from rag.pipeline import run_rag, get_default_system
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Warm up all lazy resources during startup so the first request does not
+    # pay the model-load and index-build cost. Each getter is cached, so this
+    # runs the expensive work exactly once, here, where it is observable.
     ensure_nltk_resources()
+    get_default_system()
     yield
 
 

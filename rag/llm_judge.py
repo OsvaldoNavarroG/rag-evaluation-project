@@ -2,8 +2,6 @@ import json
 from rag.openai_client import get_openai_client
 from typing import List
 
-client = get_openai_client()
-
 
 class LLMJudge:
     """
@@ -66,7 +64,7 @@ Respond ONLY in valid JSON:
         prompt: str = self._build_prompt(
             question=question, context=context, answer=answer, expected=expected
         )
-
+        client = get_openai_client()
         try:
             response = client.chat.completions.create(
                 model=self.model,

@@ -1,10 +1,9 @@
 from typing import List
 from rag.openai_client import get_openai_client
 
-client = get_openai_client()
-
 
 def generate_answer(query: str, context_chunks: List[str]) -> str:
+    client = get_openai_client()
     numbered_chunks: str = "\n\n".join(
         [f"[{i}] {c}" for i, c in enumerate(context_chunks)]
     )

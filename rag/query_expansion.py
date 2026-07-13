@@ -2,8 +2,6 @@ from rag.openai_client import get_openai_client
 from typing import List
 import json
 
-client = get_openai_client()
-
 
 class QueryExpander:
     """
@@ -41,7 +39,7 @@ Return ONLY in valid JSON a list of strings with the format:
 
     def generate(self, question: str) -> List[str]:
         prompt = self._build_prompt(question)
-
+        client = get_openai_client()
         try:
             response = client.chat.completions.create(
                 model=self.model,

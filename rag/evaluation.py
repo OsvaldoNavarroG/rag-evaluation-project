@@ -1,6 +1,6 @@
 from rag.attribution import evaluate_citation_precision
 from rag.ingestion import chunk_text_sentences
-from rag.pipeline import RAGSystem, model, judge, expander
+from rag.pipeline import RAGSystem, get_embedding_model, get_judge, get_expander
 from typing import Any, Dict, List, Optional
 
 
@@ -24,8 +24,10 @@ def run_pipeline(
     print(f"\n===== {label} =====")
 
     chunks: List[str] = chunking_fn(text)
-    system = RAGSystem(chunks=chunks, model=model, expander=expander)
-
+    system = RAGSystem(
+        chunks=chunks, model=get_embedding_model(), expander=get_expander()
+    )
+    judge = get_judge()
     results = []
 
     for item in test_data:

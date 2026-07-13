@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import Any, Dict, List
 from sentence_transformers import SentenceTransformer
 
@@ -20,6 +21,32 @@ from rag.query_expansion import QueryExpander
 from rag.config import DOC_PATH
 from rag.timing import Timer
 from rag.ingestion import ensure_nltk_resources
+
+# ---------------
+# Lazy shared resources
+# These are constructed on first use (and cached) rather than at import time,
+# so that importing this module is cheap and free of side effects: no model
+# download, no NLTK download, no API-KEY requirement. Call the getters from
+# the application startup path (FastAPI lifespan) or from the benchmark entry
+# point to control exactly when this work happens.
+# ----------------
+
+
+@lru_cache(maxsize=1)
+def get_embedding_model() -> SentenceTransformer:
+    ensure_nltk_resources()
+    return SentenceTransformer(model_name_or_path="all-MiniLM-L6-v2")
+
+
+@lru_cache(maxsize=1)
+def get_judge() -> LLMJudge:
+    return LLMJudge()
+
+
+@lru_cache(maxsize=1)
+def get_expander() -> QueryExpander:
+    return QueryExpander(n_queries=3)
+
 
 ensure_nltk_resources()
 
@@ -151,13 +178,29 @@ chunks: List[str] = chunk_text_sentences(text=text)
 default_system: RAGSystem = RAGSystem(chunks=chunks, model=model, expander=expander)
 
 
+@lru_cache(maxsize=1)
+def get_default_system() -> RAGSystem:
+    """
+    Build the default RAG system (loads the corpus, chunks it, and builds
+    the FAISS index) exactly once, on first use.
+    This is the resource the API serves from. Warm it up explicitly during
+    application startup (FastAPI lifespan) so the first user request does not
+    pay the index-build cost.
+    """
+    text: str = load_documents(path=DOC_PATH)
+    chunks: List[str] = chunk_text_sentences(text=text)
+    return RAGSystem(
+        chunks=chunks, model=get_embedding_model(), expander=get_expander()
+    )
+
+
 def run_rag(
     question: str,
     use_hybrid: bool = True,
     use_rerank: bool = True,
     use_multiquery: bool = True,
 ) -> Dict[str, Any]:
-    return default_system.query(
+    return get_default_system().query(
         question=question,
         use_hybrid=use_hybrid,
         use_rerank=use_rerank,

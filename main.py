@@ -4,8 +4,6 @@ from rag.evaluation import compare_chunking_approaches
 from rag.benchmark_export import export_json
 from rag.ingestion import ensure_nltk_resources
 
-ensure_nltk_resources()
-
 CONFIGS = {
     "dense": {"use_hybrid": False, "use_rerank": False, "use_multiquery": False},
     "hybrid": {"use_hybrid": True, "use_rerank": False, "use_multiquery": False},
@@ -13,8 +11,6 @@ CONFIGS = {
     "multiquery": {"use_hybrid": True, "use_rerank": True, "use_multiquery": True},
 }
 
-# 1. Load and prepare data
-text: str = load_documents(path="data/docs.txt")
 
 # 2. Test queries
 test_data: List[Dict[str, str]] = [
@@ -85,12 +81,26 @@ test_data: List[Dict[str, str]] = [
     },
 ]
 
-benchmark_results = []
-for name, cfg in CONFIGS.items():
-    print(f"\n--- {name.upper()} ---")
 
-    results: dict = compare_chunking_approaches(text=text, test_data=test_data, **cfg)
-    benchmark_results.append({"config_name": name, "config": cfg, "results": results})
+def main() -> None:
+    ensure_nltk_resources()
 
-output_file = export_json(data=benchmark_results)
-print(f"\nBenchmark exported to: {output_file}")
+    text: str = load_documents(path="data/docs.txt")
+
+    benchmark_results = []
+    for name, cfg in CONFIGS.items():
+        print(f"\n--- {name.upper()} ---")
+
+        results: dict = compare_chunking_approaches(
+            text=text, test_data=test_data, verbose=True, **cfg
+        )
+        benchmark_results.append(
+            {"config_name": name, "config": cfg, "results": results}
+        )
+
+    output_file = export_json(data=benchmark_results)
+    print(f"\nBenchmark exported to: {output_file}")
+
+
+if __name__ == "__main__":
+    main()
