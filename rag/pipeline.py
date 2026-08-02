@@ -48,15 +48,6 @@ def get_expander() -> QueryExpander:
     return QueryExpander(n_queries=3)
 
 
-ensure_nltk_resources()
-
-
-# Global model loading
-model: SentenceTransformer = SentenceTransformer(model_name_or_path="all-MiniLM-L6-v2")
-judge = LLMJudge()
-expander = QueryExpander(n_queries=3)
-
-
 class RAGSystem:
     def __init__(self, chunks, model, expander):
         self.chunks = chunks
@@ -169,13 +160,6 @@ class RAGSystem:
             "retrieved_chunks": retrieved_texts,
             "latency": timer.get(),
         }
-
-
-# Build retrieval system once
-text: str = load_documents(path=DOC_PATH)
-chunks: List[str] = chunk_text_sentences(text=text)
-
-default_system: RAGSystem = RAGSystem(chunks=chunks, model=model, expander=expander)
 
 
 @lru_cache(maxsize=1)

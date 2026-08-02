@@ -1,4 +1,4 @@
-from rag.attribution import evaluate_citation_precision
+from rag.attribution import evaluate_citation_precision, evaluate_claim_attribution
 from rag.ingestion import chunk_text_sentences
 from rag.pipeline import RAGSystem, get_embedding_model, get_judge, get_expander
 from typing import Any, Dict, List, Optional
@@ -50,6 +50,9 @@ def run_pipeline(
             answer=answer, chunks=retrieved_texts
         )
         citation_precision: float = citation_result["citation_precision"]
+        claim_result: Dict[str, Any] = evaluate_claim_attribution(
+            answer=answer, chunks=retrieved_texts
+        )
         # Metrics
         is_correct = evaluate_answer(predicted=answer, expected=expected)
         hit = any(expected.lower() in c.lower() for c in retrieved_texts)
@@ -93,6 +96,8 @@ def run_pipeline(
                 "has_citations": has_citations,
                 "latency_ms": result["latency"]["total"],
                 "citation_precision": citation_precision,
+                "claim_precision": claim_result["claim_precision"],
+                "claim_coverage": claim_result["claim_coverage"],
             }
         )
 
@@ -127,6 +132,19 @@ def compare_chunking_approaches(
     return {"naive": naive_summary, "sentence": sentence_summary}
 
 
+def _mean_ignoring_none(results: List[dict], key: str) -> Optional[float]:
+    """
+    Average a per-item metric, skipping items whose value is None.
+
+    Claim-level metrics are None when undefined for an item (e.g.
+    claim_precision for an answer with no cited claims). Returns None if
+    every item is None, so an undefined metric is reported as undefined,
+    not as 0.0
+    """
+    values = [r[key] for r in results if r[key] is not None]
+    return sum(values) / len(values) if values else None
+
+
 def summarize(results: List[dict]) -> dict:
     total: int = len(results)
     correct: int = sum(r["correct"] for r in results)
@@ -144,4 +162,6 @@ def summarize(results: List[dict]) -> dict:
         "citation_rate": sum(r["has_citations"] for r in results) / total,
         "avg_latency_ms": latency / total,
         "citation_precision": sum(r["citation_precision"] for r in results) / total,
+        "claim_precision": _mean_ignoring_none(results=results, key="claim_precision"),
+        "claim_coverage": _mean_ignoring_none(results=results, key="claim_coverage"),
     }

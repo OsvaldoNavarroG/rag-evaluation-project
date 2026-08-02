@@ -1,0 +1,8 @@
+[project]
+name = "rag-evaluation-system"
+version = "0.1.0"
+
+
+[tool.setuptools.packages.find]
+include = ["rag*", "app*"]
+

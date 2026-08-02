@@ -1,6 +1,6 @@
 import re
 from rag.helpers import normalize
-from typing import Any, Dict, List, Set, TypedDict
+from typing import Any, Callable, Dict, List, Optional, Set, TypedDict
 from nltk import sent_tokenize
 
 STOPWORDS = {
@@ -186,7 +186,7 @@ def evaluate_citation_precision(answer: str, chunks: List[str]) -> Dict[str, Any
                 "valid_citations": False,
                 "citation_precision": False,
             }
-    citation_supports = {
+    citation_supports: Dict[int, bool] = {
         idx: chunk_supports_answer(answer=answer, chunk=chunks[idx])
         for idx in citations
     }
@@ -208,4 +208,82 @@ def evaluate_citation_precision(answer: str, chunks: List[str]) -> Dict[str, Any
         "has_citations": True,
         "valid_citations": True,
         "citation_precision": citation_precision,
+    }
+
+
+def evaluate_claim_attribution(
+    answer: str,
+    chunks: List[str],
+    support_fn: Optional[Callable[[str, str], bool]] = None,
+):
+    """
+    Claim-level citation evaluation.
+
+    Splits the answer into sentence-level claims (via extract_cited_claims)
+    and evaluates attribution per claim, rather than pooling all citations at
+    the answer level as evaluate_citation_precision does. This exposes two
+    failure modes the answer-level metric cannot:
+    - a claim that cites the WRONG chunk (caught by claim precision), and
+    - a claim asserted with NO citation at all (caught by claim coverage).
+
+    A claim is supported if EVERY chunk it cites supports it. where "support"
+    is decided by support_fn (default: lexical chunk_supports_answer). Pass
+    a differente support_fn (e.g. an LLM-judged check) to strenghten it without
+    changing this logic.
+
+    claim_precision is None (not 0.0) when there are no cited claims, and
+    claim_coverage is None when there are no claims, so empty or citation-free
+    answers are excluded from aggregation rather than dragging averages to 0.
+    """
+    if support_fn is None:
+        support_fn = chunk_supports_answer
+
+    cited_claims_detail: List[Dict[str, Any]] = []
+    claims = extract_cited_claims(answer=answer)
+    total_claims = len(claims)
+    cited_claims = 0
+    supported_claims = 0
+
+    for claim in claims:
+        claim_text = claim["claim"]
+        indices = claim["citation_indices"]
+
+        if not indices:
+            cited_claims_detail.append(
+                {
+                    "claim": claim_text,
+                    "citation_indices": [],
+                    "cited": False,
+                    "supported": None,
+                }
+            )
+            continue
+
+        cited_claims += 1
+
+        valid = all(0 <= idx < len(chunks) for idx in indices)
+        supported = valid and all(
+            support_fn(claim_text, chunks[idx]) for idx in indices
+        )
+        if supported:
+            supported_claims = +1
+
+        cited_claims_detail.append(
+            {
+                "claim": claim_text,
+                "citation_indices": indices,
+                "cited": True,
+                "supported": supported,
+            }
+        )
+    claim_precision = supported_claims / cited_claims if cited_claims else None
+    claim_coverage = cited_claims / total_claims if total_claims else None
+
+    return {
+        "total_claims": total_claims,
+        "cited_claims": cited_claims,
+        "supported_claims": supported_claims,
+        "claim_precision": claim_precision,
+        "claim_coverage": claim_coverage,
+        "claims": cited_claims_detail,
     }
