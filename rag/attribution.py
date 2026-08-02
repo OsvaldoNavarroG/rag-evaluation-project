@@ -243,7 +243,6 @@ def evaluate_claim_attribution(
     total_claims = len(claims)
     cited_claims = 0
     supported_claims = 0
-
     for claim in claims:
         claim_text = claim["claim"]
         indices = claim["citation_indices"]
@@ -266,7 +265,7 @@ def evaluate_claim_attribution(
             support_fn(claim_text, chunks[idx]) for idx in indices
         )
         if supported:
-            supported_claims = +1
+            supported_claims += 1
 
         cited_claims_detail.append(
             {
