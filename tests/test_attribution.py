@@ -155,3 +155,9 @@ def test_claim_attribution_empty_answer_is_all_none() -> None:
     assert result["total_claims"] == 0
     assert result["claim_precision"] is None
     assert result["claim_coverage"] is None
+
+def test_extract_citations_ignore_parenthesized_numbers()-> None:
+    # Years, percentages, and counts in parentheses must NOT be read
+    # as citations. Only [i] bracket form counts.
+    answer = "CNNs emerged in the 1990s (1998) and hit 95% accuracy (98) [3]."
+    assert extract_citations(answer=answer) == [3]
