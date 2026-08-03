@@ -74,18 +74,16 @@ def extract_cited_claims(answer: str) -> List[CitedClaim]:
 
 def extract_citations(answer: str) -> List[int]:
     """
-    Extract citation indices from answer.
+    Extract citation indices in [i] bracket form from an answer.
 
-    Supports:
-    [1], [2]
-    (1), (2)
+    Only bracket form is recognized. Parenthesised numbers such as years
+    "(2024)" for figures "(95)" are deliberately NOT treated as citations,
+    since the generation prompt emits citations as [i] and matching "(\\d+)"
+    would turn any parenthesised number into a spurious citation index.
     """
     bracket_matches: list = re.findall(r"\[(\d+)\]", answer)
-    paren_matches: list = re.findall(r"\((\d+)\)", answer)
 
-    citations = bracket_matches + paren_matches
-
-    return [int(c) for c in citations]
+    return [int(c) for c in bracket_matches]
 
 
 def strip_citations(text: str) -> str:
