@@ -27,7 +27,15 @@ def health():
 @app.post("/query", response_model=QueryResponse)
 def query_rag(request: QueryRequest):
     try:
-        result: Dict[str, Any] = run_rag(question=request.question)
+        # Serving config: hybrid + rerank is the best-performing setup in
+        # the benchmark. Multi-query is disabled - it adds ~1.4s latency
+        # without a measurable quality gain on the benchmark.
+        result: Dict[str, Any] = run_rag(
+            question=request.question,
+            use_hybrid=True,
+            use_rerank=True,
+            use_multiquery=False
+            )
         return QueryResponse(
             answer=result["answer"],
             citations=result["citations"],
