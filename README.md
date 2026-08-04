@@ -314,37 +314,47 @@ Supports:
 ```text
 [0]
 [1]
-(2)
+[2]
 ```
 
+Parenthesised numbers (years, percentages, counts) are deliberately not
+treated as citations, to avoid false positives that would corrupt the
+attribution metrics.
 ---
 
 ## Faithfulness
 
 The project evaluates whether generated answers are supported by the cited evidence.
 
-Current implementation:
+The system evaluates attribution at two levels.
 
-- Extracts citations from the generated answer
-- Verifies citation indices are valid
-- Checks whether each cited chunk provides lexical support for the answer
+**Answer level** (`evaluate_citation_precision`): extracts all citations from
+the answer, verifies the indices are valid, and checks wether each cited chunk
+lexically supports the answer.
 
-### Limitations
+**Claim level** (`evaluate_claim_attribution`): splits the answer into sentence-
+level claims and evaluates each claim against its own citations. This distinguishes
+two failure modes that the answer-level metric cannot separate.
 
-The current implementation uses token-overlap heuristics and is intentionally conservative.
+- **Claim-precision** - of the claims that cite, how many cite a chunk that actually
+supports them (catches citing the *wrong* chunk).
+- **Claim-coverage** - how many claims carry any citation at all (catches claims
+asserted with *no* attribution).
 
-It does **not** yet perform claim-level attribution.
-
-For example:
+For example, given:
 
 Answer:
 - Claim A [0]
 - Claim B [1]
 
-may be marked unfaithful if chunk [0] does not support Claim B, even though Claim B is correctly supported by chunk [1].
+the answer-level metric can be dragged down if chunk [0] fails to support Claim B,
+even when Claim B is correctly supported by chunk [1]. The claim-level metric
+scores each claim against only its own cited chunks, so Claim A and Claim B are
+judged independently.
 
-Future work includes citation-attribution evaluation to assess whether individual claims are supported by the correct cited chunks.
-
+The support test is a token-overlap heuristic by default, and is injectable
+(`support_fn`) so it can be swapped for an LLM-judged check without changing
+the evaluation logic.
 ---
 
 ## Groundedness
