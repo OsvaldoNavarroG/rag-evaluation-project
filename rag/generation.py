@@ -1,4 +1,3 @@
-
 from rag.openai_client import get_openai_client
 
 

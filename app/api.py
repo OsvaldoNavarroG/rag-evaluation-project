@@ -36,8 +36,8 @@ def query_rag(request: QueryRequest):
             question=request.question,
             use_hybrid=True,
             use_rerank=True,
-            use_multiquery=False
-            )
+            use_multiquery=False,
+        )
         return QueryResponse(
             answer=result["answer"],
             citations=result["citations"],
@@ -46,5 +46,5 @@ def query_rag(request: QueryRequest):
             faithfulness=result["faithfulness"],
             latency=result["latency"],
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - catch-all so the endpoint returns a 500 rather than crashing; TODO: narrow and stop leaking str(e) to the client
         raise HTTPException(status_code=500, detail=str(e))

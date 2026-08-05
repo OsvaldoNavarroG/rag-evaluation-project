@@ -75,7 +75,7 @@ Respond ONLY in valid JSON:
             content = response.choices[0].message.content.strip()
 
             return self._parse_response(content)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - intentional: degrade to a safe default if the judge call/parse fails, so one bad response can't crash a benchmark run
             print("[LLM JUDGE ERROR]", e)
             return {"correct": False, "grounded": False}
 

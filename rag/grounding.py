@@ -1,4 +1,3 @@
-
 from rag.attribution import chunk_supports_answer
 
 

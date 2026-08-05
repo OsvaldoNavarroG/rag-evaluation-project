@@ -65,7 +65,7 @@ def test_extract_cited_claims_deduplicates_citations() -> None:
 
 def test_extract_cited_claims_retains_uncited_claims() -> None:
     answer = (
-        "Computer vision interprets visual information [1]. " "It has many applications"
+        "Computer vision interprets visual information [1]. It has many applications"
     )
     result = extract_cited_claims(answer=answer)
     assert result == [
@@ -156,7 +156,8 @@ def test_claim_attribution_empty_answer_is_all_none() -> None:
     assert result["claim_precision"] is None
     assert result["claim_coverage"] is None
 
-def test_extract_citations_ignore_parenthesized_numbers()-> None:
+
+def test_extract_citations_ignore_parenthesized_numbers() -> None:
     # Years, percentages, and counts in parentheses must NOT be read
     # as citations. Only [i] bracket form counts.
     answer = "CNNs emerged in the 1990s (1998) and hit 95% accuracy (98) [3]."

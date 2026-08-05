@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -17,7 +17,7 @@ def benchmark_timestamp() -> str:
     Example:
     2026-06-04_15-42-31
     """
-    return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    return datetime.now(tz=timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
 
 
 def benchmark_basename() -> str:

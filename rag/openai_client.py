@@ -6,6 +6,7 @@ from openai import OpenAI
 
 load_dotenv()
 
+
 @lru_cache(maxsize=1)
 def get_openai_client() -> OpenAI:
     """

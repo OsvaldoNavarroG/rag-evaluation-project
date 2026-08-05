@@ -56,6 +56,6 @@ Return ONLY in valid JSON a list of strings with the format:
                 queries.insert(0, question)
 
             return queries[: self.n_queries + 1]
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - intentional: fall back to the original query if expansion fails, so retrieval still proceeds.
             print("[QUERY EXPANSION ERROR]", e)
             return [question]
