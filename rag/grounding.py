@@ -1,8 +1,8 @@
-from typing import List
+
 from rag.attribution import chunk_supports_answer
 
 
-def is_grounded(answer: str, context_chunks: List[str]) -> bool:
+def is_grounded(answer: str, context_chunks: list[str]) -> bool:
     """
     Checks wether the answer is supported by ANY retrieved chunk.
     """
@@ -13,7 +13,7 @@ def is_grounded(answer: str, context_chunks: List[str]) -> bool:
     return False
 
 
-def is_grounded_top1(answer: str, context_chunks: List[str]) -> bool:
+def is_grounded_top1(answer: str, context_chunks: list[str]) -> bool:
     """
     Checks if the answer is supported by the TOP retrieved chunk only.
     """

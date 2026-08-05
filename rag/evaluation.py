@@ -1,7 +1,8 @@
+from typing import Any
+
 from rag.attribution import evaluate_citation_precision, evaluate_claim_attribution
 from rag.ingestion import chunk_text_sentences
-from rag.pipeline import RAGSystem, get_embedding_model, get_judge, get_expander
-from typing import Any, Dict, List, Optional
+from rag.pipeline import RAGSystem, get_embedding_model, get_expander, get_judge
 
 
 def evaluate_answer(predicted, expected):
@@ -19,11 +20,11 @@ def run_pipeline(
     use_hybrid: bool,
     use_rerank: bool,
     use_multiquery: bool,
-    verbose: Optional[bool] = False,
-) -> List[Dict[str, Any]]:
+    verbose: bool | None = False,
+) -> list[dict[str, Any]]:
     print(f"\n===== {label} =====")
 
-    chunks: List[str] = chunking_fn(text)
+    chunks: list[str] = chunking_fn(text)
     system = RAGSystem(
         chunks=chunks, model=get_embedding_model(), expander=get_expander()
     )
@@ -34,7 +35,7 @@ def run_pipeline(
         query = item["question"]
         expected = item["expected"]
 
-        result: Dict[str, Any] = system.query(
+        result: dict[str, Any] = system.query(
             question=query,
             use_hybrid=use_hybrid,
             use_rerank=use_rerank,
@@ -46,11 +47,11 @@ def run_pipeline(
         faithful = result["faithfulness"]
         has_citations = result["has_citations"]
 
-        citation_result: Dict[str, Any] = evaluate_citation_precision(
+        citation_result: dict[str, Any] = evaluate_citation_precision(
             answer=answer, chunks=retrieved_texts
         )
         citation_precision: float = citation_result["citation_precision"]
-        claim_result: Dict[str, Any] = evaluate_claim_attribution(
+        claim_result: dict[str, Any] = evaluate_claim_attribution(
             answer=answer, chunks=retrieved_texts
         )
         # Metrics
@@ -105,18 +106,18 @@ def run_pipeline(
 
 
 def compare_chunking_approaches(
-    text: str, test_data: List[Dict[str, str]], **rag_kwargs
+    text: str, test_data: list[dict[str, str]], **rag_kwargs
 ):
     from rag.ingestion import chunk_text as naive_chunk_text
 
-    naive_results: List[dict] = run_pipeline(
+    naive_results: list[dict] = run_pipeline(
         chunking_fn=naive_chunk_text,
         text=text,
         test_data=test_data,
         label="Naive Chunking",
         **rag_kwargs,
     )
-    sentence_results: List[dict] = run_pipeline(
+    sentence_results: list[dict] = run_pipeline(
         chunking_fn=chunk_text_sentences,
         text=text,
         test_data=test_data,
@@ -132,7 +133,7 @@ def compare_chunking_approaches(
     return {"naive": naive_summary, "sentence": sentence_summary}
 
 
-def _mean_ignoring_none(results: List[dict], key: str) -> Optional[float]:
+def _mean_ignoring_none(results: list[dict], key: str) -> float | None:
     """
     Average a per-item metric, skipping items whose value is None.
 
@@ -145,7 +146,7 @@ def _mean_ignoring_none(results: List[dict], key: str) -> Optional[float]:
     return sum(values) / len(values) if values else None
 
 
-def summarize(results: List[dict]) -> dict:
+def summarize(results: list[dict]) -> dict:
     total: int = len(results)
     correct: int = sum(r["correct"] for r in results)
     hits: int = sum(r["retrieval_hit"] for r in results)

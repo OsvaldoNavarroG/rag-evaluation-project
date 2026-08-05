@@ -1,26 +1,27 @@
 from functools import lru_cache
-from typing import Any, Dict, List
+from typing import Any
+
 from sentence_transformers import SentenceTransformer
 
+from rag.attribution import evaluate_faithfulness, extract_citations
+from rag.bm25 import BM25Retriever
+from rag.config import DOC_PATH
+from rag.generation import generate_answer
+from rag.grounding import is_grounded, is_grounded_top1
+from rag.hybrid import hybrid_retrieve
 from rag.ingestion import (
-    load_documents,
+    build_index,
     chunk_text_sentences,
     embed_chunks,
-    build_index,
+    ensure_nltk_resources,
+    load_documents,
 )
-from rag.bm25 import BM25Retriever
-from rag.hybrid import hybrid_retrieve
-from rag.retrieval import dense_retrieve
-from rag.reranking import rerank
-from rag.generation import generate_answer
-from rag.attribution import evaluate_faithfulness, extract_citations
-from rag.grounding import is_grounded, is_grounded_top1
 from rag.llm_judge import LLMJudge
 from rag.multi_query import MultiQueryRetriever
 from rag.query_expansion import QueryExpander
-from rag.config import DOC_PATH
+from rag.reranking import rerank
+from rag.retrieval import dense_retrieve
 from rag.timing import Timer
-from rag.ingestion import ensure_nltk_resources
 
 # ---------------
 # Lazy shared resources
@@ -71,7 +72,7 @@ class RAGSystem:
             k_bm25=5,
         )
 
-    def multiquery(self, expanded_queries: List[str]) -> list:
+    def multiquery(self, expanded_queries: list[str]) -> list:
         multi_retriever = MultiQueryRetriever(retriever_fn=self.hybrid)
         return multi_retriever.retrieve(expanded_queries=expanded_queries)
 
@@ -172,7 +173,7 @@ def get_default_system() -> RAGSystem:
     pay the index-build cost.
     """
     text: str = load_documents(path=DOC_PATH)
-    chunks: List[str] = chunk_text_sentences(text=text)
+    chunks: list[str] = chunk_text_sentences(text=text)
     return RAGSystem(
         chunks=chunks, model=get_embedding_model(), expander=get_expander()
     )
@@ -183,7 +184,7 @@ def run_rag(
     use_hybrid: bool = True,
     use_rerank: bool = True,
     use_multiquery: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     return get_default_system().query(
         question=question,
         use_hybrid=use_hybrid,

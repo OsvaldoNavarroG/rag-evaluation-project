@@ -1,4 +1,6 @@
 import re
+
+
 def normalize(text: str) -> str:
     """
     Normalize text for comparison:

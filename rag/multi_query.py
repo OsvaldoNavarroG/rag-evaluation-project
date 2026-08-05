@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 
 class MultiQueryRetriever:
@@ -12,11 +12,11 @@ class MultiQueryRetriever:
         """
         self.retriever_fn = retriever_fn
 
-    def retrieve(self, expanded_queries: List[str]) -> List[Dict[str, Any]]:
-        all_results: Dict[str, Dict[str, Any]] = {}
+    def retrieve(self, expanded_queries: list[str]) -> list[dict[str, Any]]:
+        all_results: dict[str, dict[str, Any]] = {}
 
         for q in expanded_queries:
-            results: List[Dict[str, Any]] = self.retriever_fn(q)
+            results: list[dict[str, Any]] = self.retriever_fn(q)
 
             for r in results:
                 chunk = r["chunk"]

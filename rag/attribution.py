@@ -1,7 +1,10 @@
 import re
-from rag.helpers import normalize
-from typing import Any, Callable, Dict, List, Optional, Set, TypedDict
+from collections.abc import Callable
+from typing import Any, TypedDict
+
 from nltk import sent_tokenize
+
+from rag.helpers import normalize
 
 STOPWORDS = {
     "the",
@@ -35,7 +38,7 @@ STOPWORDS = {
 
 class CitedClaim(TypedDict):
     claim: str
-    citation_indices: List[int]
+    citation_indices: list[int]
 
 
 def remove_citations(text: str) -> str:
@@ -48,7 +51,7 @@ def remove_citations(text: str) -> str:
     return re.sub(r"\s+", " ", text_without_citations).strip()
 
 
-def extract_cited_claims(answer: str) -> List[CitedClaim]:
+def extract_cited_claims(answer: str) -> list[CitedClaim]:
     """
     Split an answer into sentence level claims and extracts the citations
     attached to each claim.
@@ -59,7 +62,7 @@ def extract_cited_claims(answer: str) -> List[CitedClaim]:
     if not answer.strip():
         return []
 
-    claims: List[CitedClaim] = []
+    claims: list[CitedClaim] = []
 
     for sentence in sent_tokenize(answer):
         citation_indices = list(dict.fromkeys(extract_citations(answer=sentence)))
@@ -72,7 +75,7 @@ def extract_cited_claims(answer: str) -> List[CitedClaim]:
     return claims
 
 
-def extract_citations(answer: str) -> List[int]:
+def extract_citations(answer: str) -> list[int]:
     """
     Extract citation indices in [i] bracket form from an answer.
 
@@ -95,10 +98,10 @@ def strip_citations(text: str) -> str:
 def chunk_supports_answer(answer: str, chunk: str) -> bool:
     clean_answer: str = strip_citations(text=answer)
 
-    answer_words: Set[str] = {
+    answer_words: set[str] = {
         w for w in normalize(text=clean_answer).split() if w not in STOPWORDS
     }
-    chunk_words: Set[str] = {
+    chunk_words: set[str] = {
         w for w in normalize(text=chunk).split() if w not in STOPWORDS
     }
 
@@ -108,7 +111,7 @@ def chunk_supports_answer(answer: str, chunk: str) -> bool:
     return coverage >= 0.5
 
 
-def evaluate_faithfulness(answer: str, chunks: List[str]) -> Dict[str, bool]:
+def evaluate_faithfulness(answer: str, chunks: list[str]) -> dict[str, bool]:
     """
     Evaluates whether cited chunks support the generated answer.
 
@@ -150,7 +153,7 @@ def evaluate_faithfulness(answer: str, chunks: List[str]) -> Dict[str, bool]:
     return {"has_citations": True, "valid_citations": True, "faithful": True}
 
 
-def evaluate_citation_precision(answer: str, chunks: List[str]) -> Dict[str, Any]:
+def evaluate_citation_precision(answer: str, chunks: list[str]) -> dict[str, Any]:
     """
     Evaluates whether the answer cites supporting chunks.
 
@@ -169,7 +172,7 @@ def evaluate_citation_precision(answer: str, chunks: List[str]) -> Dict[str, Any
     "citation_precision": float
     }
     """
-    citations: List[int] = list(dict.fromkeys(extract_citations(answer=answer)))
+    citations: list[int] = list(dict.fromkeys(extract_citations(answer=answer)))
 
     if not citations:
         return {
@@ -184,7 +187,7 @@ def evaluate_citation_precision(answer: str, chunks: List[str]) -> Dict[str, Any
                 "valid_citations": False,
                 "citation_precision": False,
             }
-    citation_supports: Dict[int, bool] = {
+    citation_supports: dict[int, bool] = {
         idx: chunk_supports_answer(answer=answer, chunk=chunks[idx])
         for idx in citations
     }
@@ -211,8 +214,8 @@ def evaluate_citation_precision(answer: str, chunks: List[str]) -> Dict[str, Any
 
 def evaluate_claim_attribution(
     answer: str,
-    chunks: List[str],
-    support_fn: Optional[Callable[[str, str], bool]] = None,
+    chunks: list[str],
+    support_fn: Callable[[str, str], bool] | None = None,
 ):
     """
     Claim-level citation evaluation.
@@ -236,7 +239,7 @@ def evaluate_claim_attribution(
     if support_fn is None:
         support_fn = chunk_supports_answer
 
-    cited_claims_detail: List[Dict[str, Any]] = []
+    cited_claims_detail: list[dict[str, Any]] = []
     claims = extract_cited_claims(answer=answer)
     total_claims = len(claims)
     cited_claims = 0

@@ -1,6 +1,6 @@
 import json
+
 from rag.openai_client import get_openai_client
-from typing import List
 
 
 class LLMJudge:
@@ -57,7 +57,7 @@ Respond ONLY in valid JSON:
 """
 
     def evaluate(
-        self, question: str, context_chunks: List[str], answer: str, expected: str
+        self, question: str, context_chunks: list[str], answer: str, expected: str
     ) -> dict:
         context: str = "\n\n".join(context_chunks)
 

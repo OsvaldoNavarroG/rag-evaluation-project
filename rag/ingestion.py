@@ -1,7 +1,7 @@
+
 import nltk
-from nltk.tokenize import sent_tokenize
-from typing import List
 import numpy as np
+from nltk.tokenize import sent_tokenize
 
 
 def ensure_nltk_resources() -> None:
@@ -16,7 +16,7 @@ def ensure_nltk_resources() -> None:
         nltk.download("punkt_tab", quiet=True)
 
 
-def split_sentences(text) -> List[str]:
+def split_sentences(text) -> list[str]:
     # try nltk first, then switch to spacy
     return sent_tokenize(text)
 
@@ -26,7 +26,7 @@ def load_documents(path: str) -> str:
         return f.read()
 
 
-def chunk_text(text, chunk_size=50) -> List[str]:
+def chunk_text(text, chunk_size=50) -> list[str]:
     words = text.split()
     chunks = []
     for i in range(0, len(words), chunk_size):
@@ -34,11 +34,11 @@ def chunk_text(text, chunk_size=50) -> List[str]:
     return chunks
 
 
-def chunk_text_sentences(text, max_words=50, overlap_sentences=1) -> List[str]:
-    sentences: List[str] = split_sentences(text=text)
+def chunk_text_sentences(text, max_words=50, overlap_sentences=1) -> list[str]:
+    sentences: list[str] = split_sentences(text=text)
 
     chunks = []
-    current_chunk: List[str] = []
+    current_chunk: list[str] = []
     current_length = 0
 
     for _, sentence in enumerate(sentences):
@@ -63,7 +63,7 @@ def chunk_text_sentences(text, max_words=50, overlap_sentences=1) -> List[str]:
     return chunks
 
 
-def embed_chunks(chunks: List[str], model) -> np.ndarray:
+def embed_chunks(chunks: list[str], model) -> np.ndarray:
     embeddings = model.encode(sentences=chunks)
     return np.array(embeddings)
 

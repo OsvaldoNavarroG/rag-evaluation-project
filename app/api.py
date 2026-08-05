@@ -1,9 +1,11 @@
 from contextlib import asynccontextmanager
+from typing import Any
+
 from fastapi import FastAPI, HTTPException
-from typing import Any, Dict
+
 from app.schemas import QueryRequest, QueryResponse
 from rag.ingestion import ensure_nltk_resources
-from rag.pipeline import run_rag, get_default_system
+from rag.pipeline import get_default_system, run_rag
 
 
 @asynccontextmanager
@@ -30,7 +32,7 @@ def query_rag(request: QueryRequest):
         # Serving config: hybrid + rerank is the best-performing setup in
         # the benchmark. Multi-query is disabled - it adds ~1.4s latency
         # without a measurable quality gain on the benchmark.
-        result: Dict[str, Any] = run_rag(
+        result: dict[str, Any] = run_rag(
             question=request.question,
             use_hybrid=True,
             use_rerank=True,

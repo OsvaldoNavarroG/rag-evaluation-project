@@ -1,6 +1,6 @@
 from functools import lru_cache
+
 from sentence_transformers import CrossEncoder
-from typing import List
 
 
 @lru_cache
@@ -18,7 +18,7 @@ def get_reranker() -> CrossEncoder:
 
 def rerank(query: str, retrieved_results):
     reranker: CrossEncoder = get_reranker()
-    pairs: List[tuple] = [(query, r["chunk"]) for r in retrieved_results]
+    pairs: list[tuple] = [(query, r["chunk"]) for r in retrieved_results]
     scores = reranker.predict(pairs)
 
     for i, r in enumerate(retrieved_results):

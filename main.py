@@ -1,8 +1,7 @@
-from typing import Dict, List
-from rag.ingestion import load_documents
-from rag.evaluation import compare_chunking_approaches
+
 from rag.benchmark_export import export_json
-from rag.ingestion import ensure_nltk_resources
+from rag.evaluation import compare_chunking_approaches
+from rag.ingestion import ensure_nltk_resources, load_documents
 
 CONFIGS = {
     "dense": {"use_hybrid": False, "use_rerank": False, "use_multiquery": False},
@@ -13,7 +12,7 @@ CONFIGS = {
 
 
 # 2. Test queries
-test_data: List[Dict[str, str]] = [
+test_data: list[dict[str, str]] = [
     {
         "question": "What is the main topic of the document?",
         "expected": "machine learning",
