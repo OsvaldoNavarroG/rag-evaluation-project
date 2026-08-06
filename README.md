@@ -1,4 +1,4 @@
-[![CI](https://github.com/OsvaldoNavarroG/rag-evaluation-system/actions/workflows/ci.yml/badge.svg)](https://github.com/OsvaldoNavarroG/rag-evaluation-system/actions/workflows/ci.yml/badge.svg)
+[![CI](https://github.com/OsvaldoNavarroG/rag-evaluation-system/actions/workflows/ci.yml/badge.svg)](https://github.com/OsvaldoNavarroG/rag-evaluation-system/actions/workflows/ci.yml)
 # Production-Style RAG System with Evaluation & Benchmarking
 
 ⏱️ Time to read: ~2 minutes
