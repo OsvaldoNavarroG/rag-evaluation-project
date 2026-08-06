@@ -1,4 +1,5 @@
 import pytest
+
 from rag.ingestion import ensure_nltk_resources
 
 
