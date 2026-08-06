@@ -36,4 +36,4 @@ jobs:
               run: ruff format --check .
             
             - name: Run tests
-              run: python -m pytests tests/ -q
+              run: python -m pytest tests/ -q
