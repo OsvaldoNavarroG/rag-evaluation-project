@@ -27,7 +27,7 @@ jobs:
 
             - name: Download NLTK data
               run: |
-                python -m nltk.downloader punkt, punkt_tab
+                python -m nltk.downloader punkt punkt_tab
 
             - name: Lint (ruff)
               run: ruff check .
