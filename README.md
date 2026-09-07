@@ -44,8 +44,10 @@ Sentence chunking benchmark:
 | Faithfulness | **0.91** |
 | Groundedness | **0.45** |
 | Top-1 Groundedness | **0.41** |
-| LLM Correctness | **1.00** (benchmark dataset) |
-| LLM Groundedness | **1.00** (benchmark dataset) |
+
+> LLM-as-judge correctness and groundedness both score 1.00 on the current
+> corpus - saturated, so they're discussed under Evaluation Gap rather than
+> reported as headline results.
 
 ---
 
@@ -100,7 +102,12 @@ Adding more queries increased noise and latency.
 
 ## 3. Evaluation Gap
 
-Traditional heuristic metrics underestimate semantic correctness.
+Traditional heuristic metrics underestimate semantic correctness. Two things
+follow on a small corpus: the heuristic vs LLM *groundedness* gap is large
+(~0.45 vs ~1.0), and LLM-judged *correctness* saturates at 1.00 because the
+questions are simple enough that the judge passes every answer. Both are why
+the LLM-as-judge numbers belong in this methodology discussion rather than on
+a results scoreboard.
 
 Observed gap:
 
@@ -108,6 +115,7 @@ Observed gap:
 |---|---:|
 | Heuristic Groundedness | ~0.45 |
 | LLM Groundedness | ~1.0 |
+| LLM Correctness | ~1.0 |
 
 This motivated:
 
@@ -321,6 +329,7 @@ Supports:
 Parenthesised numbers (years, percentages, counts) are deliberately not
 treated as citations, to avoid false positives that would corrupt the
 attribution metrics.
+
 ---
 
 ## Faithfulness
@@ -330,7 +339,7 @@ The project evaluates whether generated answers are supported by the cited evide
 The system evaluates attribution at two levels.
 
 **Answer level** (`evaluate_citation_precision`): extracts all citations from
-the answer, verifies the indices are valid, and checks wether each cited chunk
+the answer, verifies the indices are valid, and checks whether each cited chunk
 lexically supports the answer.
 
 **Claim level** (`evaluate_claim_attribution`): splits the answer into sentence-
@@ -356,6 +365,7 @@ judged independently.
 The support test is a token-overlap heuristic by default, and is injectable
 (`support_fn`) so it can be swapped for an LLM-judged check without changing
 the evaluation logic.
+
 ---
 
 ## Groundedness
@@ -405,11 +415,10 @@ This separation keeps the API useful for live inspection while keeping experimen
 
 Current limitations of the evaluation framework:
 
-- Faithfulness uses lexical-overlap heuristics
-- Faithfulness is intentionally conservative and may penalize multi-claim answers
-- Citation correctness is not yet evaluated separately
-- Benchmark dataset is relatively small
-- System initialization occurs at import time
+- Faithfulness support checks are lexical (token-overlap) by default; the check is injectable (`support_fn`) so an LLM-judged version can be swapped in without changing the evaluation logic
+- Answer-level faithfulness is intentionally conservative and may penalize multi-claim answers (claim-level attribution addresses this - see Evaluation Features)
+- Benchmark dataset is relatively small, so several metrics are near-saturated and do not yet separate configurations strongly
+- Evaluation adds meaningful latency, so online (per-request) evaluation is a cost tradeoff versus offline benchmarking
 
 These limitations are documented intentionally and are part of the planned roadmap.
 
@@ -518,7 +527,14 @@ Most importantly:
 Install:
 
 ```bash
-pip install sentence-transformers faiss-cpu rank-bm25 openai fastapi uvicorn python-dotenv
+pip install -r requirements.txt
+pip install -e .
+```
+
+Set your OpenAI API key (required for generation and LLM-as-judge):
+
+```bash
+export OPENAI_API_KEY=sk-...
 ```
 
 Run benchmark:
@@ -533,13 +549,17 @@ Run API:
 uvicorn app.api:app --reload
 ```
 
+Run tests:
+
+```bash
+pytest
+```
+
 ---
 
 # 🔧 Planned Improvements
 
-- Citation accuracy evaluation
-- Claim-level attribution analysis
-- Claim-level faithfulness checking
-- Larger benchmark datasets
-- Config-driven experiments
-- Retrieval difficulty benchmarking
+- Larger, harder benchmark datasets (to separate configurations and surface real failure modes)
+- LLM-judged claim support (swapping the injectable `support_fn` for a semantic check)
+- Config-driven experiments (YAML/CLI-driven benchmark configuration)
+- Retrieval-difficulty benchmarking
